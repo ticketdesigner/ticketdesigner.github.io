@@ -7,22 +7,22 @@
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#082c19">
 <meta name="description" content="Manage vouchers, check-in, walk-ins, and event reporting from the secure role-based staff dashboard.">
-<link rel="canonical" href="https://ticketdesigner.github.io/claim.html">
+<link rel="canonical" href="https://ticketdesigner.github.io/dashboard.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Ticket Designer">
-<meta property="og:url" content="https://ticketdesigner.github.io/claim.html">
+<meta property="og:url" content="https://ticketdesigner.github.io/dashboard.html">
 <meta property="og:title" content="Staff Operations Dashboard | Ticket Designer">
 <meta property="og:description" content="Manage vouchers, check-in, walk-ins, and event reporting from the secure role-based staff dashboard.">
-<meta property="og:image" content="https://ticketdesigner.github.io/gate-og.jpg">
-<meta property="og:image:secure_url" content="https://ticketdesigner.github.io/gate-og.jpg">
+<meta property="og:image" content="https://ticketdesigner.github.io/dashboard-og.jpg">
+<meta property="og:image:secure_url" content="https://ticketdesigner.github.io/dashboard-og.jpg">
 <meta property="og:image:type" content="image/jpeg">
-<meta property="og:image:width" content="1536">
-<meta property="og:image:height" content="1024">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Ticket Designer staff operations dashboard">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Staff Operations Dashboard | Ticket Designer">
 <meta name="twitter:description" content="Manage vouchers, check-in, walk-ins, and event reporting from the secure role-based staff dashboard.">
-<meta name="twitter:image" content="https://ticketdesigner.github.io/gate-og.jpg">
+<meta name="twitter:image" content="https://ticketdesigner.github.io/dashboard-og.jpg">
 <meta name="twitter:image:alt" content="Ticket Designer staff operations dashboard">
 <title>Staff Operations Dashboard | Ticket Designer</title>
 <style>
@@ -752,7 +752,7 @@ async function loadBatch(batchId) {
         const actions = document.createElement('div');
         actions.className = 'voucher-actions';
 
-        const voucherUrl = `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, 'v.html')}?voucher=${v.token}`;
+        const voucherUrl = `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, 'claim.html')}?voucher=${v.token}`;
 
         const claimBtnEl = document.createElement('button');
         claimBtnEl.type = 'button';

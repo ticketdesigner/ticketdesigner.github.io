@@ -9,7 +9,6 @@ This package is a clean starting point built from the uploaded current system an
 - `admin.html` — System Owner user/role management
 - `batch.html?batch=...` — public secure voucher-set distribution
 - `claim.html?voucher=...` — single voucher claim
-- `v.html` — compatibility redirect only; no new links should use it
 
 ## Fresh Google Sheets
 1. Import `TicketDesigner_Regional_Config_v7.xlsx` into a NEW Google Sheet.
@@ -30,10 +29,10 @@ With an empty Events table, an authorized System Owner, Regional Admin, or Chapt
 
 ## Social previews
 - `/` → `admin-og.jpg`
-- `dashboard.html` → `gate-og.jpg`
-- `designer.html` → `config-og.jpg`
+- `dashboard.html` → `dashboard-og.jpg`
+- `designer.html` → `designer-og.jpg`
 - `admin.html` → `admin-og.jpg`
-- `batch.html` → `distribution-og.jpg`
+- `batch.html` → `batch-og.jpg`
 - `claim.html` → `claim-og.jpg`
 
 ## Important

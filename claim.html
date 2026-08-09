@@ -16,8 +16,8 @@
 <meta property="og:image" content="https://ticketdesigner.github.io/claim-og.jpg">
 <meta property="og:image:secure_url" content="https://ticketdesigner.github.io/claim-og.jpg">
 <meta property="og:image:type" content="image/jpeg">
-<meta property="og:image:width" content="1536">
-<meta property="og:image:height" content="1024">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Claim Your Ticket - secure digital ticket voucher">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Claim Your Ticket | Ticket Designer">
@@ -750,7 +750,7 @@ async function loadBatch(batchId) {
         const actions = document.createElement('div');
         actions.className = 'voucher-actions';
 
-        const voucherUrl = `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, 'v.html')}?voucher=${v.token}`;
+        const voucherUrl = `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, 'claim.html')}?voucher=${v.token}`;
 
         const claimBtnEl = document.createElement('button');
         claimBtnEl.type = 'button';
