@@ -25,4 +25,4 @@ The renderer automatically uses `tickets/<chapter-code-lowercase>/logo.png` and 
 | VAC | Virginia Chapter |
 | WDC | Washington DC Chapter |
 
-For non-SLPP organizations, configure the organization/chapter/event normally, then choose **Custom event logo** and **Custom event background** in `config.html`.
+For non-SLPP organizations, configure the organization/chapter/event normally, then choose **Custom event logo** and **Custom event background** in `designer.html`.

@@ -13,17 +13,17 @@
 <meta property="og:url" content="https://ticketdesigner.github.io/batch.html">
 <meta property="og:title" content="Your Ticket Vouchers Are Ready | Ticket Designer">
 <meta property="og:description" content="Open this secure link to view your set of ticket vouchers and share each voucher with its recipient.">
-<meta property="og:image" content="https://ticketdesigner.github.io/claim-og.jpg">
-<meta property="og:image:secure_url" content="https://ticketdesigner.github.io/claim-og.jpg">
+<meta property="og:image" content="https://ticketdesigner.github.io/distribution-og.jpg">
+<meta property="og:image:secure_url" content="https://ticketdesigner.github.io/distribution-og.jpg">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Claim Your Ticket - secure digital ticket vouchers">
+<meta property="og:image:alt" content="Ticket Voucher Distribution - secure voucher set sharing">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Your Ticket Vouchers Are Ready | Ticket Designer">
 <meta name="twitter:description" content="Open this secure link to view your set of ticket vouchers and share each voucher with its recipient.">
-<meta name="twitter:image" content="https://ticketdesigner.github.io/claim-og.jpg">
-<meta name="twitter:image:alt" content="Claim Your Ticket - secure digital ticket vouchers">
+<meta name="twitter:image" content="https://ticketdesigner.github.io/distribution-og.jpg">
+<meta name="twitter:image:alt" content="Ticket Voucher Distribution - secure voucher set sharing">
 <title>Your Ticket Vouchers Are Ready | Ticket Designer</title>
 <style>
 :root{--green:#0b3d24;--deep:#062c1a;--gold:#c9a24b;--cream:#faf7ef;--ink:#1d241f;--muted:#68756d;--border:#ded8c9;--danger:#8a1f1f}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--deep);color:var(--ink);min-height:100vh}header{background:#052416;color:#fff;text-align:center;border-bottom:3px solid var(--gold);padding:34px 18px 26px}header .eyebrow{color:#e8d39a;font-size:12px;letter-spacing:.18em;text-transform:uppercase}header h1{margin:8px 0 5px;font-size:clamp(25px,4vw,36px)}header p{margin:0;color:#dce9e1}main{width:min(760px,calc(100% - 28px));margin:28px auto 60px}.card{background:var(--cream);border-radius:16px;padding:24px;box-shadow:0 18px 50px rgba(0,0,0,.3)}.intro{color:#4c554f;line-height:1.5;margin:0 0 18px}.event{background:#eef4ef;border:1px solid #cfdbd2;border-radius:10px;padding:12px 14px;margin-bottom:18px}.event strong{color:var(--green)}.voucher{background:#fff;border:1px solid var(--border);border-radius:12px;padding:15px;margin:12px 0}.voucherTop{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}.voucherTitle{font-weight:800;color:var(--green)}.tier{font-size:13px;color:var(--muted);margin-top:3px}.status{font-size:12px;font-weight:700;padding:6px 9px;border-radius:999px;background:#edf3ef;color:#315c41}.status.claimed{background:#e9f5eb;color:#216332}.status.sent{background:#fff5dc;color:#745d16}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}button,a.btn{appearance:none;border:0;border-radius:8px;padding:10px 13px;font:inherit;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;background:var(--green);color:#fff}.secondary{background:#eef3ef!important;color:var(--green)!important;border:1px solid #cbd8cf!important}.sendPanel{display:none;margin-top:13px;padding-top:13px;border-top:1px solid #e6e0d2}.sendPanel label{display:block;font-size:12px;font-weight:700;margin:7px 0 5px}.sendPanel input{width:100%;padding:10px;border:1px solid #d4cdbd;border-radius:8px}.error{display:none;margin:14px 0;padding:11px 12px;border-radius:8px;background:#fdeaea;color:var(--danger)}.topActions{display:flex;justify-content:flex-end;margin-bottom:14px}.loading{text-align:center;padding:28px;color:#536158}.small{font-size:12px;color:#6f7772;line-height:1.45;margin-top:18px}@media(max-width:600px){.card{padding:17px}.actions button,.actions a.btn{flex:1;text-align:center}}
@@ -50,7 +50,7 @@ const error=document.getElementById('error');
 const eventBox=document.getElementById('eventBox');
 function showError(m){error.textContent=m;error.style.display='block';list.innerHTML='';list.className='';}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function voucherUrl(v,d){const q=new URLSearchParams({voucher:v.token});if(d.organizationId)q.set('org',d.organizationId);if(d.chapterCode)q.set('chapter',d.chapterCode);if(d.eventId)q.set('event',d.eventId);return `${location.origin}${location.pathname.replace(/batch\.html$/,'v.html')}?${q.toString()}`;}
+function voucherUrl(v,d){const q=new URLSearchParams({voucher:v.token});if(d.organizationId)q.set('org',d.organizationId);if(d.chapterCode)q.set('chapter',d.chapterCode);if(d.eventId)q.set('event',d.eventId);return `${location.origin}${location.pathname.replace(/batch\.html$/,'claim.html')}?${q.toString()}`;}
 async function recordSend(v,email,phone){const r=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'sendVoucherFromBatch',batchAccessToken:ACCESS_TOKEN,token:v.token,recipientEmail:email,recipientPhone:phone})});return r.json();}
 function render(data){
   if(data.eventName||data.chapterName){eventBox.style.display='block';eventBox.innerHTML=`<strong>${esc(data.eventName||'Event')}</strong>${data.chapterName?`<br><span>${esc(data.chapterName)}</span>`:''}`;}

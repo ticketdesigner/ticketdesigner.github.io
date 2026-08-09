@@ -6,25 +6,25 @@
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#082c19">
-<meta name="description" content="You've received a secure digital ticket voucher. Open this link to claim your ticket for the event.">
+<meta name="description" content="Manage vouchers, check-in, walk-ins, and event reporting from the secure role-based staff dashboard.">
 <link rel="canonical" href="https://ticketdesigner.github.io/claim.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Ticket Designer">
 <meta property="og:url" content="https://ticketdesigner.github.io/claim.html">
-<meta property="og:title" content="Claim Your Ticket | Ticket Designer">
-<meta property="og:description" content="You've received a secure digital ticket voucher. Open this link to claim your ticket for the event.">
-<meta property="og:image" content="https://ticketdesigner.github.io/claim-og.jpg">
-<meta property="og:image:secure_url" content="https://ticketdesigner.github.io/claim-og.jpg">
+<meta property="og:title" content="Staff Operations Dashboard | Ticket Designer">
+<meta property="og:description" content="Manage vouchers, check-in, walk-ins, and event reporting from the secure role-based staff dashboard.">
+<meta property="og:image" content="https://ticketdesigner.github.io/gate-og.jpg">
+<meta property="og:image:secure_url" content="https://ticketdesigner.github.io/gate-og.jpg">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1536">
 <meta property="og:image:height" content="1024">
-<meta property="og:image:alt" content="Claim Your Ticket - secure digital ticket voucher">
+<meta property="og:image:alt" content="Ticket Designer staff operations dashboard">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Claim Your Ticket | Ticket Designer">
-<meta name="twitter:description" content="You've received a secure digital ticket voucher. Open this link to claim your ticket for the event.">
-<meta name="twitter:image" content="https://ticketdesigner.github.io/claim-og.jpg">
-<meta name="twitter:image:alt" content="Claim Your Ticket - secure digital ticket voucher">
-<title>Claim Your Ticket | Ticket Designer</title>
+<meta name="twitter:title" content="Staff Operations Dashboard | Ticket Designer">
+<meta name="twitter:description" content="Manage vouchers, check-in, walk-ins, and event reporting from the secure role-based staff dashboard.">
+<meta name="twitter:image" content="https://ticketdesigner.github.io/gate-og.jpg">
+<meta name="twitter:image:alt" content="Ticket Designer staff operations dashboard">
+<title>Staff Operations Dashboard | Ticket Designer</title>
 <style>
   :root{
     --green:#0b3d24; --green-deep:#082c19; --gold:#c9a24b; --gold-light:#e8d39a; --cream:#faf7ef; --ink:#1b1b1b;
@@ -94,7 +94,7 @@
   <div class="eyebrow" id="headerEyebrow">Event Ticketing</div>
   <h1 id="headerTitle">Executive Inauguration Celebration</h1>
   <p id="headerModeText">Secure event ticketing and check-in.</p>
-  <div class="tab-bar" id="tabBar" style="display:none!important;">
+  <div class="tab-bar" id="tabBar">
     <button type="button" class="tab-btn" data-tab="generate">Generate Vouchers</button>
     <button type="button" class="tab-btn" data-tab="checkin">Check-In</button>
     <button type="button" class="tab-btn" data-tab="summary">Summary</button>
@@ -102,7 +102,7 @@
   <div id="staffNavLinks" style="display:none;margin-top:12px;gap:8px;flex-wrap:wrap;justify-content:center;"><a id="ticketConfigLink" style="display:none;padding:8px 13px;border:1px solid var(--gold);border-radius:8px;color:var(--gold-light);font-weight:700;text-decoration:none;">Ticket Configuration</a><a id="userAdminLink" href="admin.html" style="display:none;padding:8px 13px;border:1px solid var(--gold);border-radius:8px;color:var(--gold-light);font-weight:700;text-decoration:none;">Users & Roles</a><button id="staffLogoutBtn" type="button" style="padding:8px 13px;border:1px solid var(--gold);border-radius:8px;background:transparent;color:var(--gold-light);font-weight:700;cursor:pointer;">Sign Out</button></div>
 </header>
 
-<div id="adminPasscodeWrap" style="display:none!important;">
+<div id="adminPasscodeWrap">
   <label for="adminPasscode" style="color:var(--gold-light);">Admin passcode</label>
   <input type="password" id="adminPasscode" placeholder="Enter your admin passcode" autocomplete="off">
   <button type="button" id="unlockBtn" style="margin-top:10px;padding:10px 18px;background:var(--gold);color:var(--green-deep);border:none;border-radius:8px;font-weight:700;cursor:pointer;">Unlock</button>
@@ -167,17 +167,17 @@
     <button type="button" class="submit" id="claimAnotherBtn" style="margin-top:20px;background:transparent;color:var(--green);border:1px solid var(--green);">Claim Another Ticket</button>
   </div>
 
-  <!-- ============== GENERATE VOUCHERS (unified: 1 to 10) ============== -->
+  <!-- ============== GENERATE VOUCHERS ============== -->
   <div class="card admin-section-generate" id="panelGenerate" style="display:none;">
     <h2>Generate Vouchers</h2>
     <p id="generateGateMessage" style="font-size:14px;color:#555;">🔒 Enter your admin passcode above and click Unlock to access this section.</p>
     <div id="generateContent" style="display:none;">
-    <p style="font-size:12px;color:#555;margin:0 0 12px;">Always produces ONE link for a distributor — even a single voucher for one known person works the same way as a stack of ten for a chapter leader to hand out.</p>
+    <p style="font-size:12px;color:#555;margin:0 0 12px;">One voucher produces a direct claim link. Multiple vouchers produce one secure batch link for a distributor.</p>
 
     <p style="font-size:13px;font-weight:600;margin:14px 0 4px;">How many of each tier? <span style="font-weight:400;color:#555;">(no overall quantity limit)</span></p>
     <div id="tierCountFields"></div>
     <label for="vOpenCount">No fixed tier <span style="font-weight:400;color:#555;">(recipient picks their own)</span></label>
-    <input type="number" id="vOpenCount" min="0" max="10" value="0">
+    <input type="number" id="vOpenCount" min="0" value="0">
 
     <label for="vRecipientName">Recipient / distributor name <span style="font-weight:400;color:#555;">(recipient if total = 1; distributor if total &gt; 1)</span></label>
     <input type="text" id="vRecipientName">
@@ -290,14 +290,16 @@ const CONFIG = {
 
 const IS_VOUCHER_MODE = !!URL_PARAMS.get('voucher');
 const IS_BATCH_MODE = !!URL_PARAMS.get('batch');
-const IS_STAFF_MODE = false;
+const IS_STAFF_MODE = true;
 const STAFF_PASSCODE_KEY = 'slppStaffPasscode';
 const STAFF_PROFILE_KEY = 'slppStaffProfile';
 function staffPasscode(){ return sessionStorage.getItem(STAFF_PASSCODE_KEY) || ''; }
 function staffProfile(){ try{return JSON.parse(sessionStorage.getItem(STAFF_PROFILE_KEY)||'null')}catch(_){return null} }
 
 // No open public claim form. Visitors without a voucher must use the staff login page.
-if (IS_BATCH_MODE) { window.location.replace('batch.html?batch=' + encodeURIComponent(URL_PARAMS.get('batch'))); }
+if (!IS_VOUCHER_MODE && !IS_BATCH_MODE && !IS_STAFF_MODE) {
+  window.location.replace('index.html' + window.location.search);
+}
 
 let REGIONAL_TICKET_CONFIG = null;
 
@@ -854,19 +856,60 @@ async function loadBatch(batchId) {
 }
 
 (async function bootstrap() {
+  // Wait for live tiers/groups before trying to preselect a voucher's tier or
+  // chapter. This removes a race where voucher links could load before the
+  // dynamic controls existed.
   await Promise.all([loadPageConfig(), loadRegionalTicketConfig().catch(err => { console.error(err); return null; })]);
-  const batchIdParam = URL_PARAMS.get('batch');
-  const voucherIdParam = URL_PARAMS.get('voucher');
-  document.getElementById('adminPasscodeWrap').style.display = 'none';
+
+  const batchIdParam = new URLSearchParams(window.location.search).get('batch');
+  const voucherIdParam = new URLSearchParams(window.location.search).get('voucher');
   if (batchIdParam) { window.location.replace('batch.html?batch=' + encodeURIComponent(batchIdParam)); return; }
-  if (voucherIdParam) {
+  if (voucherIdParam) { window.location.replace('claim.html?voucher=' + encodeURIComponent(voucherIdParam)); return; }
+  if (false) {
+    if (!IS_STAFF_MODE || !staffPasscode()) { window.location.replace('index.html'); return; }
+    document.getElementById('adminPasscodeWrap').style.display = 'none';
+    document.getElementById('headerModeText').textContent = 'Voucher distribution workspace';
+    await loadBatch(batchIdParam);
+    document.getElementById('refreshBatchBtn').addEventListener('click', (ev) => {
+      ev.target.disabled = true;
+      ev.target.textContent = 'Refreshing…';
+      loadBatch(batchIdParam).finally(() => { ev.target.disabled = false; ev.target.textContent = '↻ Refresh Status'; });
+    });
+  } else if (voucherIdParam) {
+    document.getElementById('adminPasscodeWrap').style.display = 'none';
     document.getElementById('headerModeText').textContent = 'Complete the form below to claim your voucher.';
     await applyVoucherParams();
-    return;
+  } else if (IS_STAFF_MODE) {
+    if (!staffPasscode()) { window.location.replace('index.html'); return; }
+    document.getElementById('formCard').style.display = 'none';
+    document.getElementById('adminPasscodeWrap').style.display = 'none';
+    document.getElementById('headerModeText').textContent = 'Staff portal';
+    tabBar.classList.add('visible');
+    try {
+      const res = await fetch(CONFIG.ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'verifyPasscode',adminPasscode:staffPasscode(),organizationId:CONFIG.organizationId,eventId:CONFIG.eventId,chapterCode:CONFIG.chapterCode})});
+      const auth=await res.json();
+      if(!auth.ok) throw new Error(auth.error||'Access denied');
+      const p=auth.permissions||{};
+      document.querySelector('[data-tab=generate]').style.display=p.canGenerateVouchers?'':'none';
+      document.querySelector('[data-tab=checkin]').style.display=p.canCheckIn?'':'none';
+      document.querySelector('[data-tab=summary]').style.display=p.canViewReports?'':'none';
+      document.getElementById('adminPasscode').value=staffPasscode();
+      const nav=document.getElementById('staffNavLinks'); nav.style.display='flex';
+      const cfgLink=document.getElementById('ticketConfigLink');
+      cfgLink.href='designer.html?'+new URLSearchParams({org:CONFIG.organizationId,chapter:CONFIG.chapterCode,event:CONFIG.eventId}).toString();
+      cfgLink.style.display=p.canConfigureTicket?'inline-block':'none';
+      document.getElementById('userAdminLink').style.display=p.canManageUsers?'inline-block':'none';
+      document.getElementById('staffLogoutBtn').onclick=()=>{sessionStorage.removeItem(STAFF_PASSCODE_KEY);sessionStorage.removeItem(STAFF_PROFILE_KEY);location.href='index.html';};
+      if(p.canGenerateVouchers) showTab('generate'); else if(p.canCheckIn) showTab('checkin'); else if(p.canViewReports) showTab('summary');
+      adminVerified=true;
+      document.getElementById('generateGateMessage').style.display=p.canGenerateVouchers?'none':'block';
+      document.getElementById('generateContent').style.display=p.canGenerateVouchers?'block':'none';
+      document.getElementById('checkinGateMessage').style.display=p.canCheckIn?'none':'block';
+      document.getElementById('checkinContent').style.display=p.canCheckIn?'block':'none';
+      document.getElementById('viewClaimsBtn').disabled=!p.canViewReports;
+      document.getElementById('viewSummaryBtn').disabled=!p.canViewReports;
+    } catch(e) { sessionStorage.removeItem(STAFF_PASSCODE_KEY); sessionStorage.removeItem(STAFF_PROFILE_KEY); window.location.replace('index.html?error=session'); }
   }
-  formCard.style.display='block';
-  formCard.innerHTML='<h2>Valid Voucher Required</h2><p style="line-height:1.55;color:#555">A valid ticket voucher is required to claim a ticket. Please open the secure claim link that was sent to you.</p>';
-  document.getElementById('headerModeText').textContent='A valid ticket voucher is required.';
 })();
 
 /* -------- Claimant form submission -------- */
@@ -1196,7 +1239,8 @@ generateBtn.addEventListener('click', async () => {
       const contactPhone = (data.contactPhone || '').trim();
       const safePhone = contactPhone.replace(/\D/g, '');
       const waPhone = safePhone.length === 10 ? '1' + safePhone : safePhone;
-      const roleLabel = data.contactRole === 'distributor' ? 'Distributor' : 'Recipient';
+      const roleLabel = data.mode === 'batch' ? 'Distributor' : 'Recipient';
+      const linkLabel = data.mode === 'batch' ? 'voucher distribution link' : 'ticket claim link';
 
       generateResult.innerHTML = `<strong>${data.count} voucher(s) ready:</strong><br>` +
         `<a href="${data.distributorUrl}" target="_blank" rel="noopener">${data.distributorUrl}</a>` +
@@ -1212,7 +1256,9 @@ generateBtn.addEventListener('click', async () => {
         `</div><span id="shareGenFallback" style="display:none;font-size:12px;color:#8a8a8a;margin-top:8px;">Sharing isn't supported here. Use Text, WhatsApp, or Copy Link.</span>`;
       generateResult.style.display = 'block';
 
-      const message = `${contactName ? contactName + ', ' : ''}you have ${data.count} ticket voucher(s) for ${EVENT_CONFIG.EventTitle}. Open your distributor link: ${data.distributorUrl}`;
+      const message = data.mode === 'batch'
+        ? `${contactName ? contactName + ', ' : ''}you have ${data.count} ticket vouchers for ${EVENT_CONFIG.EventTitle}. Open your voucher distribution link: ${data.distributorUrl}`
+        : `${contactName ? contactName + ', ' : ''}you have received a ticket voucher for ${EVENT_CONFIG.EventTitle}. Claim your ticket here: ${data.distributorUrl}`;
 
       document.getElementById('shareGenBtn').addEventListener('click', async () => {
         const shareData = { title: `${EVENT_CONFIG.ChapterName} — Ticket Voucher(s)`, text: message, url: data.distributorUrl };

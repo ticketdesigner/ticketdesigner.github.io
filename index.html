@@ -13,9 +13,14 @@
 <meta property="og:site_name" content="Ticket Designer">
 <meta property="og:title" content="Ticket Designer | Staff & Administrator Portal">
 <meta property="og:description" content="Secure role-based event ticket administration, voucher distribution and guest check-in.">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://ticketdesigner.github.io/admin-og.jpg">
+<meta property="og:image:secure_url" content="https://ticketdesigner.github.io/admin-og.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:alt" content="Ticket Designer secure staff and administrator portal">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Ticket Designer | Staff & Administrator Portal">
 <meta name="twitter:description" content="Secure role-based event ticket administration, voucher distribution and guest check-in.">
+<meta name="twitter:image" content="https://ticketdesigner.github.io/admin-og.jpg">
 <title>Ticket Designer | Staff & Administrator Portal</title>
 <style>
 :root{--green:#0b3d24;--gold:#c9a24b;--cream:#faf7ef;--ink:#1f2923}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(145deg,#eef3ef,#faf7ef);color:var(--ink);min-height:100vh;display:grid;place-items:center}.card{width:min(560px,calc(100% - 32px));background:white;border-radius:18px;box-shadow:0 20px 55px rgba(0,0,0,.12);overflow:hidden}.head{background:var(--green);color:white;padding:28px;border-bottom:5px solid var(--gold)}.head h1{margin:0 0 6px;font-size:27px}.head p{margin:0;color:#dce8df}.body{padding:28px}label{display:block;font-weight:700;margin-bottom:7px}input,select{width:100%;padding:12px;border:1px solid #cbd5ce;border-radius:9px;font:inherit;margin-bottom:14px}button{width:100%;border:0;border-radius:9px;padding:13px 18px;background:var(--green);color:white;font-weight:800;font-size:16px;cursor:pointer}.error{display:none;margin-top:13px;padding:11px;background:#fff0f0;color:#902525;border-radius:8px}.muted{font-size:13px;color:#68756d;margin-top:18px;line-height:1.45}.eventPicker{display:none}.links{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.links a{color:var(--green);font-weight:700;font-size:13px}
@@ -34,12 +39,20 @@ const APP=window.SLPP_APP_CONFIG||{}, ENDPOINT=APP.workflowEndpoint;
 const form=document.getElementById('loginForm'), pass=document.getElementById('passcode'), err=document.getElementById('error'), btn=document.getElementById('loginBtn'), picker=document.getElementById('eventPicker'), select=document.getElementById('eventSelect');
 let LOGIN=null;
 function showError(m){err.textContent=m;err.style.display='block'}
-function eventUrl(e){const q=new URLSearchParams({staff:'1',org:e.organizationId||APP.defaultOrganization||'SLPPNA',chapter:e.chapterCode||'',event:e.eventId||''});return 'claim.html?'+q.toString()}
+function eventUrl(e){const q=new URLSearchParams({staff:'1',org:e.organizationId||APP.defaultOrganization||'SLPPNA',chapter:e.chapterCode||'',event:e.eventId||''});return 'dashboard.html?'+q.toString()}
 form.addEventListener('submit',async ev=>{ev.preventDefault();err.style.display='none';
   if(LOGIN){const e=LOGIN.events.find(x=>x.eventId===select.value)||LOGIN.events[0];if(!e){showError('No active event is assigned to this account.');return;}sessionStorage.setItem('slppStaffPasscode',pass.value);sessionStorage.setItem('slppStaffProfile',JSON.stringify(LOGIN));location.href=eventUrl(e);return;}
   btn.disabled=true;btn.textContent='Signing in…';
   try{const r=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'staffLogin',adminPasscode:pass.value})});const d=await r.json();if(!d.ok)throw new Error(d.error||'Sign in failed.');LOGIN=d;const events=d.events||[];
-    if(!events.length)throw new Error('This account is active but has no active event assignment.');
+    if(!events.length){
+      sessionStorage.setItem('slppStaffPasscode',pass.value);sessionStorage.setItem('slppStaffProfile',JSON.stringify(d));
+      if(d.permissions&&d.permissions.canConfigureTicket){
+        const q=new URLSearchParams({org:d.admin.organizationId||APP.defaultOrganization||'SLPPNA'});
+        if(d.admin.chapterCode&&d.admin.chapterCode!=='ALL')q.set('chapter',d.admin.chapterCode);
+        location.href='designer.html?'+q.toString();return;
+      }
+      throw new Error('This account is active but has no active event assignment.');
+    }
     if(events.length===1){sessionStorage.setItem('slppStaffPasscode',pass.value);sessionStorage.setItem('slppStaffProfile',JSON.stringify(d));location.href=eventUrl(events[0]);return;}
     select.innerHTML=events.map(e=>`<option value="${e.eventId}">${e.eventName} · ${e.chapterCode}</option>`).join('');picker.style.display='block';btn.textContent='Continue to Event';btn.disabled=false;
   }catch(e){showError(e.message);btn.textContent='Sign In';btn.disabled=false;}
