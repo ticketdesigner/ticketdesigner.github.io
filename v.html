@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0b3d24">
+<meta name="description" content="Secure event ticket voucher gateway.">
+<link rel="canonical" href="https://ticketdesigner.github.io/v.html">
+<title>Ticket Voucher | Ticket Designer</title>
+</head>
+<body>
+<p id="msg">Opening your ticket voucher…</p>
+<script>
+const q=new URLSearchParams(location.search);
+if(!q.get('voucher')){
+  document.getElementById('msg').textContent='A valid ticket voucher is required.';
+}else{
+  location.replace('claim.html?'+q.toString());
+}
+</script>
+</body>
+</html>
