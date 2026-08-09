@@ -69,6 +69,12 @@
   .voucher-row .voucher-actions{ display:flex; gap:8px; }
   .tab-bar{ display:none; justify-content:center; gap:8px; flex-wrap:wrap; padding:16px 20px 0; }
   .tab-bar.visible{ display:flex; }
+  .staff-meta{margin-top:10px;color:var(--gold-light);font-size:13px;font-weight:700;}
+  .event-switcher{display:none;max-width:420px;margin:14px auto 0;}
+  .event-switcher select{margin:0;background:#fff;color:#1b1b1b;}
+  .empty-state{display:none;text-align:center;}
+  .empty-state p{color:#4f5c54;line-height:1.55;}
+  .empty-state a{display:inline-block;margin-top:10px;padding:11px 18px;border-radius:8px;background:var(--green);color:#fff;text-decoration:none;font-weight:800;}
   .tab-btn{ padding:8px 16px; border-radius:20px; border:1px solid rgba(232,211,154,.4); background:transparent; color:rgba(250,247,239,.75); font-size:13px; font-weight:600; cursor:pointer; }
   .tab-btn.active{ background:var(--gold); color:var(--green-deep); border-color:var(--gold); }
   #adminPasscodeWrap{ max-width:640px; margin:16px auto 0; padding:0 20px; display:none; }
@@ -91,15 +97,17 @@
 <body>
 
 <header>
-  <div class="eyebrow" id="headerEyebrow">Event Ticketing</div>
-  <h1 id="headerTitle">Executive Inauguration Celebration</h1>
-  <p id="headerModeText">Secure event ticketing and check-in.</p>
+  <div class="eyebrow" id="headerEyebrow">Ticket Designer</div>
+  <h1 id="headerTitle">Staff Dashboard</h1>
+  <p id="headerModeText">Secure role-based event operations.</p>
+  <div class="staff-meta" id="staffIdentity"></div>
+  <div class="event-switcher" id="eventSwitcher"><select id="eventSelect" aria-label="Select event"></select></div>
   <div class="tab-bar" id="tabBar">
     <button type="button" class="tab-btn" data-tab="generate">Generate Vouchers</button>
     <button type="button" class="tab-btn" data-tab="checkin">Check-In</button>
     <button type="button" class="tab-btn" data-tab="summary">Summary</button>
   </div>
-  <div id="staffNavLinks" style="display:none;margin-top:12px;gap:8px;flex-wrap:wrap;justify-content:center;"><a id="ticketConfigLink" style="display:none;padding:8px 13px;border:1px solid var(--gold);border-radius:8px;color:var(--gold-light);font-weight:700;text-decoration:none;">Ticket Configuration</a><a id="userAdminLink" href="admin.html" style="display:none;padding:8px 13px;border:1px solid var(--gold);border-radius:8px;color:var(--gold-light);font-weight:700;text-decoration:none;">Users & Roles</a><button id="staffLogoutBtn" type="button" style="padding:8px 13px;border:1px solid var(--gold);border-radius:8px;background:transparent;color:var(--gold-light);font-weight:700;cursor:pointer;">Sign Out</button></div>
+  <div id="staffNavLinks" style="display:none;margin-top:12px;gap:8px;flex-wrap:wrap;justify-content:center;"><a id="ticketConfigLink" style="display:none;padding:8px 13px;border:1px solid var(--gold);border-radius:8px;color:var(--gold-light);font-weight:700;text-decoration:none;">Event Designer</a><a id="userAdminLink" href="admin.html" style="display:none;padding:8px 13px;border:1px solid var(--gold);border-radius:8px;color:var(--gold-light);font-weight:700;text-decoration:none;">Access Management</a><button id="staffLogoutBtn" type="button" style="padding:8px 13px;border:1px solid var(--gold);border-radius:8px;background:transparent;color:var(--gold-light);font-weight:700;cursor:pointer;">Log Out</button></div>
 </header>
 
 <div id="adminPasscodeWrap">
@@ -110,6 +118,12 @@
 </div>
 
 <main>
+
+  <div class="card empty-state" id="noEventCard">
+    <h2>No event selected</h2>
+    <p id="noEventMessage">No active event is currently available in your assigned scope.</p>
+    <a id="createEventLink" href="designer.html" style="display:none;">Open Event Designer</a>
+  </div>
 
   <!-- DISTRIBUTOR VIEW: shown when opened with ?batch=TOKEN -->
   <div class="card" id="batchCard" style="display:none;">
@@ -281,11 +295,11 @@
 const URL_PARAMS = new URLSearchParams(window.location.search);
 const PUBLIC_CONFIG = window.SLPP_APP_CONFIG || {};
 const CONFIG = {
-  ENDPOINT: PUBLIC_CONFIG.workflowEndpoint || 'https://script.google.com/macros/s/AKfycbxcfrPorclAPXv0vCg0hBjxiWR8yUq43Hfhegrmt_HnX2otsvjMx1h9-JFYRCQ2qau2/exec',
-  TICKET_CONFIG_ENDPOINT: PUBLIC_CONFIG.ticketConfigEndpoint || 'https://script.google.com/macros/s/AKfycbzlMiozn4uggplThfTpr7E2iqshLaGxO-ec4WiZ0QeVeOYQT5PYxpCn49IsVSwhPmGQUQ/exec',
+  ENDPOINT: PUBLIC_CONFIG.workflowEndpoint || '',
+  TICKET_CONFIG_ENDPOINT: PUBLIC_CONFIG.ticketConfigEndpoint || '',
   organizationId: URL_PARAMS.get('org') || PUBLIC_CONFIG.defaultOrganization || 'SLPPNA',
-  chapterCode: URL_PARAMS.get('chapter') || PUBLIC_CONFIG.defaultChapter || 'NYC',
-  eventId: URL_PARAMS.get('event') || PUBLIC_CONFIG.defaultEvent || 'NYC-2026-INAUGURATION'
+  chapterCode: URL_PARAMS.get('chapter') || '',
+  eventId: URL_PARAMS.get('event') || ''
 };
 
 const IS_VOUCHER_MODE = !!URL_PARAMS.get('voucher');
@@ -856,59 +870,100 @@ async function loadBatch(batchId) {
 }
 
 (async function bootstrap() {
-  // Wait for live tiers/groups before trying to preselect a voucher's tier or
-  // chapter. This removes a race where voucher links could load before the
-  // dynamic controls existed.
-  await Promise.all([loadPageConfig(), loadRegionalTicketConfig().catch(err => { console.error(err); return null; })]);
-
-  const batchIdParam = new URLSearchParams(window.location.search).get('batch');
-  const voucherIdParam = new URLSearchParams(window.location.search).get('voucher');
+  const batchIdParam = URL_PARAMS.get('batch');
+  const voucherIdParam = URL_PARAMS.get('voucher');
   if (batchIdParam) { window.location.replace('batch.html?batch=' + encodeURIComponent(batchIdParam)); return; }
   if (voucherIdParam) { window.location.replace('claim.html?voucher=' + encodeURIComponent(voucherIdParam)); return; }
-  if (false) {
-    if (!IS_STAFF_MODE || !staffPasscode()) { window.location.replace('index.html'); return; }
-    document.getElementById('adminPasscodeWrap').style.display = 'none';
-    document.getElementById('headerModeText').textContent = 'Voucher distribution workspace';
-    await loadBatch(batchIdParam);
-    document.getElementById('refreshBatchBtn').addEventListener('click', (ev) => {
-      ev.target.disabled = true;
-      ev.target.textContent = 'Refreshing…';
-      loadBatch(batchIdParam).finally(() => { ev.target.disabled = false; ev.target.textContent = '↻ Refresh Status'; });
-    });
-  } else if (voucherIdParam) {
-    document.getElementById('adminPasscodeWrap').style.display = 'none';
-    document.getElementById('headerModeText').textContent = 'Complete the form below to claim your voucher.';
-    await applyVoucherParams();
-  } else if (IS_STAFF_MODE) {
-    if (!staffPasscode()) { window.location.replace('index.html'); return; }
-    document.getElementById('formCard').style.display = 'none';
-    document.getElementById('adminPasscodeWrap').style.display = 'none';
-    document.getElementById('headerModeText').textContent = 'Staff portal';
+  if (!staffPasscode()) { window.location.replace('index.html'); return; }
+
+  document.getElementById('formCard').style.display = 'none';
+  document.getElementById('adminPasscodeWrap').style.display = 'none';
+
+  try {
+    const loginRes = await fetch(CONFIG.ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'staffLogin',adminPasscode:staffPasscode()})});
+    const login = await loginRes.json();
+    if(!login.ok) throw new Error(login.error||'Access denied');
+    sessionStorage.setItem(STAFF_PROFILE_KEY,JSON.stringify(login));
+
+    const admin=login.admin||{};
+    const p=login.permissions||{};
+    const events=Array.isArray(login.events)?login.events:[];
+    document.getElementById('staffIdentity').textContent=[admin.adminName,admin.role,admin.chapterCode&&admin.chapterCode!=='ALL'?admin.chapterCode:''].filter(Boolean).join(' · ');
+
+    const nav=document.getElementById('staffNavLinks');
+    nav.style.display='flex';
+    const cfgLink=document.getElementById('ticketConfigLink');
+    const ownerLink=document.getElementById('userAdminLink');
+    ownerLink.style.display=p.canManageUsers?'inline-block':'none';
+    document.getElementById('staffLogoutBtn').onclick=()=>{sessionStorage.removeItem(STAFF_PASSCODE_KEY);sessionStorage.removeItem(STAFF_PROFILE_KEY);location.href='index.html';};
+
+    let selected=null;
+    if(CONFIG.eventId){ selected=events.find(e=>e.eventId===CONFIG.eventId)||null; }
+    if(!selected && events.length){ selected=events[0]; }
+
+    const designerParams=new URLSearchParams({org:admin.organizationId||CONFIG.organizationId||'SLPPNA'});
+    if(selected){
+      CONFIG.organizationId=selected.organizationId||CONFIG.organizationId;
+      CONFIG.chapterCode=selected.chapterCode||'';
+      CONFIG.eventId=selected.eventId||'';
+      designerParams.set('chapter',CONFIG.chapterCode);
+      designerParams.set('event',CONFIG.eventId);
+    } else if(admin.chapterCode&&admin.chapterCode!=='ALL'){
+      designerParams.set('chapter',admin.chapterCode);
+    }
+    cfgLink.href='designer.html?'+designerParams.toString();
+    cfgLink.style.display=p.canConfigureTicket?'inline-block':'none';
+
+    const eventSwitcher=document.getElementById('eventSwitcher');
+    const eventSelect=document.getElementById('eventSelect');
+    if(events.length){
+      eventSelect.innerHTML=events.map(e=>`<option value="${e.eventId}" ${selected&&e.eventId===selected.eventId?'selected':''}>${e.eventName} · ${e.chapterCode}</option>`).join('');
+      eventSwitcher.style.display='block';
+      eventSelect.onchange=()=>{
+        const e=events.find(x=>x.eventId===eventSelect.value);
+        if(!e)return;
+        const q=new URLSearchParams({org:e.organizationId||'SLPPNA',chapter:e.chapterCode||'',event:e.eventId||''});
+        location.href='dashboard.html?'+q.toString();
+      };
+    }
+
+    if(!selected){
+      document.getElementById('headerEyebrow').textContent=admin.organizationId||CONFIG.organizationId||'Ticket Designer';
+      document.getElementById('headerTitle').textContent='Staff Dashboard';
+      document.getElementById('headerModeText').textContent='No active event is currently available in your assigned scope.';
+      document.getElementById('noEventCard').style.display='block';
+      if(p.canConfigureTicket){
+        document.getElementById('noEventMessage').textContent='No event is currently available in your assigned scope. You can create or configure an event in Event Designer.';
+        const createLink=document.getElementById('createEventLink');
+        createLink.href=cfgLink.href;
+        createLink.style.display='inline-block';
+      }
+      tabBar.classList.remove('visible');
+      return;
+    }
+
+    const q=new URLSearchParams({org:CONFIG.organizationId,chapter:CONFIG.chapterCode,event:CONFIG.eventId});
+    history.replaceState(null,'','dashboard.html?'+q.toString());
+    await Promise.all([loadPageConfig(), loadRegionalTicketConfig().catch(err => { console.error(err); return null; })]);
+
+    document.getElementById('headerModeText').textContent='Staff portal';
     tabBar.classList.add('visible');
-    try {
-      const res = await fetch(CONFIG.ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'verifyPasscode',adminPasscode:staffPasscode(),organizationId:CONFIG.organizationId,eventId:CONFIG.eventId,chapterCode:CONFIG.chapterCode})});
-      const auth=await res.json();
-      if(!auth.ok) throw new Error(auth.error||'Access denied');
-      const p=auth.permissions||{};
-      document.querySelector('[data-tab=generate]').style.display=p.canGenerateVouchers?'':'none';
-      document.querySelector('[data-tab=checkin]').style.display=p.canCheckIn?'':'none';
-      document.querySelector('[data-tab=summary]').style.display=p.canViewReports?'':'none';
-      document.getElementById('adminPasscode').value=staffPasscode();
-      const nav=document.getElementById('staffNavLinks'); nav.style.display='flex';
-      const cfgLink=document.getElementById('ticketConfigLink');
-      cfgLink.href='designer.html?'+new URLSearchParams({org:CONFIG.organizationId,chapter:CONFIG.chapterCode,event:CONFIG.eventId}).toString();
-      cfgLink.style.display=p.canConfigureTicket?'inline-block':'none';
-      document.getElementById('userAdminLink').style.display=p.canManageUsers?'inline-block':'none';
-      document.getElementById('staffLogoutBtn').onclick=()=>{sessionStorage.removeItem(STAFF_PASSCODE_KEY);sessionStorage.removeItem(STAFF_PROFILE_KEY);location.href='index.html';};
-      if(p.canGenerateVouchers) showTab('generate'); else if(p.canCheckIn) showTab('checkin'); else if(p.canViewReports) showTab('summary');
-      adminVerified=true;
-      document.getElementById('generateGateMessage').style.display=p.canGenerateVouchers?'none':'block';
-      document.getElementById('generateContent').style.display=p.canGenerateVouchers?'block':'none';
-      document.getElementById('checkinGateMessage').style.display=p.canCheckIn?'none':'block';
-      document.getElementById('checkinContent').style.display=p.canCheckIn?'block':'none';
-      document.getElementById('viewClaimsBtn').disabled=!p.canViewReports;
-      document.getElementById('viewSummaryBtn').disabled=!p.canViewReports;
-    } catch(e) { sessionStorage.removeItem(STAFF_PASSCODE_KEY); sessionStorage.removeItem(STAFF_PROFILE_KEY); window.location.replace('index.html?error=session'); }
+    document.querySelector('[data-tab=generate]').style.display=p.canGenerateVouchers?'':'none';
+    document.querySelector('[data-tab=checkin]').style.display=p.canCheckIn?'':'none';
+    document.querySelector('[data-tab=summary]').style.display=p.canViewReports?'':'none';
+    document.getElementById('adminPasscode').value=staffPasscode();
+    if(p.canGenerateVouchers) showTab('generate'); else if(p.canCheckIn) showTab('checkin'); else if(p.canViewReports) showTab('summary');
+    adminVerified=true;
+    document.getElementById('generateGateMessage').style.display=p.canGenerateVouchers?'none':'block';
+    document.getElementById('generateContent').style.display=p.canGenerateVouchers?'block':'none';
+    document.getElementById('checkinGateMessage').style.display=p.canCheckIn?'none':'block';
+    document.getElementById('checkinContent').style.display=p.canCheckIn?'block':'none';
+    document.getElementById('viewClaimsBtn').disabled=!p.canViewReports;
+    document.getElementById('viewSummaryBtn').disabled=!p.canViewReports;
+  } catch(e) {
+    sessionStorage.removeItem(STAFF_PASSCODE_KEY);
+    sessionStorage.removeItem(STAFF_PROFILE_KEY);
+    window.location.replace('index.html?error=session');
   }
 })();
 
