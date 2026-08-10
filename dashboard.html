@@ -107,8 +107,19 @@
     <button type="button" class="tab-btn" data-tab="checkin">Check-In</button>
     <button type="button" class="tab-btn" data-tab="summary">Summary</button>
   </div>
-  <div id="staffNavLinks" style="display:none;margin-top:12px;gap:8px;flex-wrap:wrap;justify-content:center;"><a id="ticketConfigLink" style="display:none;padding:8px 13px;border:1px solid var(--gold);border-radius:8px;color:var(--gold-light);font-weight:700;text-decoration:none;">Event Designer</a><a id="userAdminLink" href="admin.html" style="display:none;padding:8px 13px;border:1px solid var(--gold);border-radius:8px;color:var(--gold-light);font-weight:700;text-decoration:none;">Access Management</a><button id="staffLogoutBtn" type="button" style="padding:8px 13px;border:1px solid var(--gold);border-radius:8px;background:transparent;color:var(--gold-light);font-weight:700;cursor:pointer;">Log Out</button></div>
+  <div id="staffNavLinks" style="display:none;margin-top:12px;gap:8px;flex-wrap:wrap;justify-content:center;"><a id="ticketConfigLink" style="display:none;padding:8px 13px;border:1px solid var(--gold);border-radius:8px;color:var(--gold-light);font-weight:700;text-decoration:none;">Event Designer</a><a id="userAdminLink" href="admin.html" style="display:none;padding:8px 13px;border:1px solid var(--gold);border-radius:8px;color:var(--gold-light);font-weight:700;text-decoration:none;">Access Management</a><button id="tempAccessBtn" type="button" style="display:none;padding:8px 13px;border:1px solid var(--gold);border-radius:8px;background:transparent;color:var(--gold-light);font-weight:700;cursor:pointer;">Request Temporary Access</button><button id="staffLogoutBtn" type="button" style="padding:8px 13px;border:1px solid var(--gold);border-radius:8px;background:transparent;color:var(--gold-light);font-weight:700;cursor:pointer;">Log Out</button></div>
 </header>
+
+<div id="tempAccessModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div style="width:min(520px,100%);background:#fff;border-radius:14px;padding:22px;color:#18231c;box-shadow:0 20px 55px rgba(0,0,0,.3)">
+    <h2 style="margin-top:0;color:#0b3d24">Temporary Authorized Access</h2>
+    <p style="font-size:13px;color:#66736b">An authorized staff member can approve one function for this event for 15 minutes. Your own account remains signed in.</p>
+    <label for="tempCapability">Function</label><select id="tempCapability" style="width:100%;padding:10px;margin:6px 0 14px"></select>
+    <label for="approverPasscode">Authorized staff passcode</label><input id="approverPasscode" type="password" autocomplete="off" style="width:100%;padding:10px;margin:6px 0 14px">
+    <div id="tempAccessStatus" class="error" style="display:none"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button id="tempAccessCancel" type="button">Cancel</button><button id="tempAccessApprove" type="button">Approve Access</button></div>
+  </div>
+</div>
 
 <div id="adminPasscodeWrap">
   <label for="adminPasscode" style="color:var(--gold-light);">Admin passcode</label>
@@ -305,9 +316,12 @@ const CONFIG = {
 const IS_VOUCHER_MODE = !!URL_PARAMS.get('voucher');
 const IS_BATCH_MODE = !!URL_PARAMS.get('batch');
 const IS_STAFF_MODE = true;
-const STAFF_PASSCODE_KEY = 'slppStaffPasscode';
+const STAFF_SESSION_TOKEN_KEY = 'slppSessionToken';
 const STAFF_PROFILE_KEY = 'slppStaffProfile';
-function staffPasscode(){ return sessionStorage.getItem(STAFF_PASSCODE_KEY) || ''; }
+const STAFF_DELEGATION_KEY = 'slppDelegation';
+function staffSessionToken(){ return sessionStorage.getItem(STAFF_SESSION_TOKEN_KEY) || ''; }
+function delegationInfo(){ try{return JSON.parse(sessionStorage.getItem(STAFF_DELEGATION_KEY)||'null')}catch(_){return null} }
+function delegationToken(){ const d=delegationInfo(); return d&&(!d.expiresAt||new Date(d.expiresAt)>new Date()) ? (d.token||'') : ''; }
 function staffProfile(){ try{return JSON.parse(sessionStorage.getItem(STAFF_PROFILE_KEY)||'null')}catch(_){return null} }
 
 // No open public claim form. Visitors without a voucher must use the staff login page.
@@ -603,7 +617,7 @@ unlockBtn.addEventListener('click', async () => {
     const res = await fetch(CONFIG.ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'verifyPasscode', adminPasscode: adminPasscodeValue(), organizationId: CONFIG.organizationId, eventId: CONFIG.eventId, chapterCode: CONFIG.chapterCode })
+      body: JSON.stringify({ action: 'verifyPasscode', sessionToken: staffSessionToken(), delegationToken: delegationToken(), organizationId: CONFIG.organizationId, eventId: CONFIG.eventId, chapterCode: CONFIG.chapterCode })
     });
     const data = await res.json();
 
@@ -720,7 +734,7 @@ async function loadBatch(batchId) {
   batchCard.style.display = 'block';
 
   try {
-    const res = await fetch(CONFIG.ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'adminLookupBatch',batchId:batchId,adminPasscode:staffPasscode()})});
+    const res = await fetch(CONFIG.ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'adminLookupBatch',batchId:batchId,sessionToken:staffSessionToken(), delegationToken:delegationToken()})});
     const data = await res.json();
     if (!data.ok) { batchViewError.textContent = data.error || 'This distributor link is not valid.'; batchViewError.style.display = 'block'; return; }
 
@@ -821,7 +835,7 @@ async function loadBatch(batchId) {
           const res = await fetch(CONFIG.ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: 'sendVoucher', token: v.token, recipientEmail: email, recipientPhone: phone, adminPasscode: staffPasscode() })
+            body: JSON.stringify({ action: 'sendVoucher', token: v.token, recipientEmail: email, recipientPhone: phone, sessionToken: staffSessionToken(), delegationToken: delegationToken() })
           });
           return res.json();
         };
@@ -869,24 +883,50 @@ async function loadBatch(batchId) {
   }
 }
 
+function applyDelegatedPermission(perms){
+  const d=delegationInfo();
+  if(!d||!d.capability||!d.token|| (d.expiresAt&&new Date(d.expiresAt)<=new Date())) return perms;
+  const map={generateVouchers:'canGenerateVouchers',distributeVouchers:'canDistributeVouchers',checkIn:'canCheckIn',viewReports:'canViewReports',configureTicket:'canConfigureTicket',manageEvent:'canManageEvent'};
+  const key=map[d.capability]; if(key) perms[key]=true; return perms;
+}
+function setupTemporaryAccess(perms,selected){
+  const btn=document.getElementById('tempAccessBtn');
+  const caps=[['generateVouchers','Generate Vouchers','canGenerateVouchers'],['distributeVouchers','Distribute Vouchers','canDistributeVouchers'],['checkIn','Check-In / Walk-In','canCheckIn'],['viewReports','Reports','canViewReports'],['configureTicket','Event Designer','canConfigureTicket']].filter(x=>!perms[x[2]]);
+  btn.style.display=(selected&&caps.length)?'inline-block':'none';
+  if(!selected||!caps.length)return;
+  const modal=document.getElementById('tempAccessModal'), sel=document.getElementById('tempCapability'), status=document.getElementById('tempAccessStatus');
+  sel.innerHTML=caps.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('');
+  btn.onclick=()=>{status.style.display='none';document.getElementById('approverPasscode').value='';modal.style.display='flex'};
+  document.getElementById('tempAccessCancel').onclick=()=>modal.style.display='none';
+  document.getElementById('tempAccessApprove').onclick=async()=>{
+    status.style.display='none';
+    try{
+      const r=await fetch(CONFIG.TICKET_CONFIG_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'requestDelegatedAccess',sessionToken:staffSessionToken(),organizationId:selected.organizationId,chapterCode:selected.chapterCode,eventId:selected.eventId,capability:sel.value,approverPasscode:document.getElementById('approverPasscode').value})});
+      const d=await r.json(); if(!d.ok)throw new Error(d.error||'Approval failed.');
+      sessionStorage.setItem(STAFF_DELEGATION_KEY,JSON.stringify({token:d.delegationToken,capability:d.capability,expiresAt:d.expiresAt,approver:d.approver}));
+      location.reload();
+    }catch(e){status.textContent=e.message;status.style.display='block'}
+  };
+}
+
 (async function bootstrap() {
   const batchIdParam = URL_PARAMS.get('batch');
   const voucherIdParam = URL_PARAMS.get('voucher');
   if (batchIdParam) { window.location.replace('batch.html?batch=' + encodeURIComponent(batchIdParam)); return; }
   if (voucherIdParam) { window.location.replace('claim.html?voucher=' + encodeURIComponent(voucherIdParam)); return; }
-  if (!staffPasscode()) { window.location.replace('index.html'); return; }
+  if (!staffSessionToken()) { window.location.replace('index.html'); return; }
 
   document.getElementById('formCard').style.display = 'none';
   document.getElementById('adminPasscodeWrap').style.display = 'none';
 
   try {
-    const loginRes = await fetch(CONFIG.ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'staffLogin',adminPasscode:staffPasscode()})});
+    const loginRes = await fetch(CONFIG.ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'verifyPasscode',sessionToken:staffSessionToken(),delegationToken:delegationToken(),organizationId:'',eventId:'',chapterCode:''})});
     const login = await loginRes.json();
     if(!login.ok) throw new Error(login.error||'Access denied');
     sessionStorage.setItem(STAFF_PROFILE_KEY,JSON.stringify(login));
 
     const admin=login.admin||{};
-    const p=login.permissions||{};
+    const p=applyDelegatedPermission(login.permissions||{});
     const events=Array.isArray(login.events)?login.events:[];
     document.getElementById('staffIdentity').textContent=[admin.adminName,admin.role,admin.chapterCode&&admin.chapterCode!=='ALL'?admin.chapterCode:''].filter(Boolean).join(' · ');
 
@@ -895,11 +935,12 @@ async function loadBatch(batchId) {
     const cfgLink=document.getElementById('ticketConfigLink');
     const ownerLink=document.getElementById('userAdminLink');
     ownerLink.style.display=p.canManageUsers?'inline-block':'none';
-    document.getElementById('staffLogoutBtn').onclick=()=>{sessionStorage.removeItem(STAFF_PASSCODE_KEY);sessionStorage.removeItem(STAFF_PROFILE_KEY);location.href='index.html';};
+    document.getElementById('staffLogoutBtn').onclick=async()=>{try{await fetch(CONFIG.TICKET_CONFIG_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'logoutSession',sessionToken:staffSessionToken()})})}catch(_){} sessionStorage.removeItem(STAFF_SESSION_TOKEN_KEY);sessionStorage.removeItem(STAFF_PROFILE_KEY);sessionStorage.removeItem(STAFF_DELEGATION_KEY);location.href='index.html';};
 
     let selected=null;
     if(CONFIG.eventId){ selected=events.find(e=>e.eventId===CONFIG.eventId)||null; }
     if(!selected && events.length){ selected=events[0]; }
+    setupTemporaryAccess(p,selected);
 
     const designerParams=new URLSearchParams({org:admin.organizationId||CONFIG.organizationId||'SLPPNA'});
     if(selected){
@@ -951,7 +992,7 @@ async function loadBatch(batchId) {
     document.querySelector('[data-tab=generate]').style.display=p.canGenerateVouchers?'':'none';
     document.querySelector('[data-tab=checkin]').style.display=p.canCheckIn?'':'none';
     document.querySelector('[data-tab=summary]').style.display=p.canViewReports?'':'none';
-    document.getElementById('adminPasscode').value=staffPasscode();
+    document.getElementById('adminPasscode').value='';
     if(p.canGenerateVouchers) showTab('generate'); else if(p.canCheckIn) showTab('checkin'); else if(p.canViewReports) showTab('summary');
     adminVerified=true;
     document.getElementById('generateGateMessage').style.display=p.canGenerateVouchers?'none':'block';
@@ -961,7 +1002,7 @@ async function loadBatch(batchId) {
     document.getElementById('viewClaimsBtn').disabled=!p.canViewReports;
     document.getElementById('viewSummaryBtn').disabled=!p.canViewReports;
   } catch(e) {
-    sessionStorage.removeItem(STAFF_PASSCODE_KEY);
+    sessionStorage.removeItem(STAFF_SESSION_TOKEN_KEY);
     sessionStorage.removeItem(STAFF_PROFILE_KEY);
     window.location.replace('index.html?error=session');
   }
@@ -1243,7 +1284,7 @@ function getTierDisplay(tier) {
   return { label: label.replace(/\s*\([^)]*\)/, ''), price: match ? match[0].replace(')', '') : '?' };
 }
 
-function adminPasscodeValue() { return staffPasscode() || document.getElementById('adminPasscode').value.trim(); }
+function adminPasscodeValue() { return ''; }
 
 /* -------- Generate Vouchers -------- */
 const generateBtn = document.getElementById('generateBtn');
@@ -1267,7 +1308,7 @@ generateBtn.addEventListener('click', async () => {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
         action: 'adminGenerateVouchers',
-        adminPasscode: adminPasscodeValue(),
+        sessionToken: staffSessionToken(), delegationToken: delegationToken(),
         tierCounts: tierCounts,
         openCount: document.getElementById('vOpenCount').value,
         recipientName: document.getElementById('vRecipientName').value.trim(),
@@ -1605,7 +1646,7 @@ checkInSerialBtn.addEventListener('click', async () => {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
         action: 'checkInWithTicket',
-        adminPasscode: adminPasscodeValue(),
+        sessionToken: staffSessionToken(), delegationToken: delegationToken(),
         serial,
         phone: document.getElementById('checkInPhone1').value.trim(),
         paymentStatus: document.getElementById('checkInPayment1').value,
@@ -1657,7 +1698,7 @@ walkInBtn.addEventListener('click', async () => {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
         action: 'checkInWalkIn',
-        adminPasscode: adminPasscodeValue(),
+        sessionToken: staffSessionToken(), delegationToken: delegationToken(),
         fullName,
         chapter: document.getElementById('wiChapter').value,
         tier: document.getElementById('wiTier').value,
@@ -1710,7 +1751,7 @@ viewClaimsBtn.addEventListener('click', async () => {
     const res = await fetch(CONFIG.ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'viewVoucherOverview', adminPasscode: adminPasscodeValue(), organizationId: CONFIG.organizationId, eventId: CONFIG.eventId, chapterCode: CONFIG.chapterCode })
+      body: JSON.stringify({ action: 'viewVoucherOverview', sessionToken: staffSessionToken(), delegationToken: delegationToken(), organizationId: CONFIG.organizationId, eventId: CONFIG.eventId, chapterCode: CONFIG.chapterCode })
     });
     const data = await res.json();
 
@@ -1763,7 +1804,7 @@ viewSummaryBtn.addEventListener('click', async () => {
     const res = await fetch(CONFIG.ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'viewCheckInSummary', adminPasscode: adminPasscodeValue(), organizationId: CONFIG.organizationId, eventId: CONFIG.eventId, chapterCode: CONFIG.chapterCode })
+      body: JSON.stringify({ action: 'viewCheckInSummary', sessionToken: staffSessionToken(), delegationToken: delegationToken(), organizationId: CONFIG.organizationId, eventId: CONFIG.eventId, chapterCode: CONFIG.chapterCode })
     });
     const data = await res.json();
 

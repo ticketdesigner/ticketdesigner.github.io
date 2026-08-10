@@ -35,8 +35,15 @@
 <div class="wrap">
   <div id="gate" class="gate">
     <h2>Owner / Event Organizer Access</h2>
-    <p class="small">This page is locked. Your backend permission determines which event you may configure.</p>
-    <div class="field"><label for="passcode">Admin passcode</label><input id="passcode" type="password" autocomplete="current-password"></div>
+    <p class="small">Your session and role determine which events you may configure.</p>
+    <div id="scopeSetup" style="display:none">
+      <div class="field"><label for="scopeChapter">Chapter</label><select id="scopeChapter"></select></div>
+      <div class="field"><label for="scopeEvent">Event</label><select id="scopeEvent"></select></div>
+      <div class="field" id="newEventNameWrap" style="display:none"><label for="newEventName">New Event Name</label><input id="newEventName" placeholder="Executive Inauguration Celebration"></div>
+      <button id="scopeContinue" type="button" class="btn primary">Continue</button>
+      <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
+    </div>
+    <div class="field" style="display:none"><label for="passcode">Admin passcode</label><input id="passcode" type="password" autocomplete="current-password"></div>
     <button id="unlock" class="btn primary">Unlock Configuration</button>
     <div id="gateStatus" class="status"></div>
   </div>
@@ -101,16 +108,18 @@
 <script src="assets/js/app-config.js"></script>
 <script src="assets/js/ticket-renderer.js"></script>
 <script>
-const STAFF_SESSION_PASSCODE=sessionStorage.getItem('slppStaffPasscode')||'';
+const STAFF_SESSION_TOKEN=sessionStorage.getItem('slppSessionToken')||'';
+const DELEGATION=(()=>{try{return JSON.parse(sessionStorage.getItem('slppDelegation')||'null')}catch(_){return null}})();
 const Q=new URLSearchParams(location.search), APP=window.SLPP_APP_CONFIG||{};
-const SCOPE={organizationId:Q.get('org')||APP.defaultOrganization||'SLPPNA',chapterCode:(Q.get('chapter')||APP.defaultChapter||'NYC').toUpperCase(),eventId:(Q.get('event')||APP.defaultEvent||'NYC-2026-INAUGURATION').toUpperCase()};
+let SCOPE={organizationId:Q.get('org')||APP.defaultOrganization||'SLPPNA',chapterCode:(Q.get('chapter')||APP.defaultChapter||'').toUpperCase(),eventId:(Q.get('event')||APP.defaultEvent||'').toUpperCase()};
+let PREFILL_EVENT_NAME='';
 const ENDPOINT=APP.ticketConfigEndpoint; let ACCESS=null, CURRENT=null, selectedLogoData='', selectedBackgroundData='';
 const $=id=>document.getElementById(id); $('scopeLine').textContent=`${SCOPE.organizationId} · ${SCOPE.chapterCode} · ${SCOPE.eventId}`;
 function status(el,msg,error=false){el.textContent=msg;el.className='status'+(error?' error':'');el.style.display='block'}
-async function post(action,extra={}){const r=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,organizationId:SCOPE.organizationId,chapterCode:SCOPE.chapterCode,eventId:SCOPE.eventId,adminPasscode:$('passcode').value,...extra})}); return r.json()}
+async function post(action,extra={}){const r=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,organizationId:SCOPE.organizationId,chapterCode:SCOPE.chapterCode,eventId:SCOPE.eventId,sessionToken:STAFF_SESSION_TOKEN,delegationToken:(DELEGATION&&DELEGATION.capability==='configureTicket'?DELEGATION.token:''),...extra})}); return r.json()}
 function val(id,v){$(id).value=v??''} function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function defaultLogo(){return `tickets/${SCOPE.chapterCode.toLowerCase()}/logo.png`} function defaultBackground(){return `tickets/${SCOPE.chapterCode.toLowerCase()}/skyline-bg.png`}
-$('unlock').onclick=async()=>{try{status($('gateStatus'),'Checking access…');const d=await post('verifyConfigAccess');if(!d.ok)throw new Error(d.error||'Access denied');ACCESS=d.admin;CURRENT=d.config; $('gate').classList.add('hidden');$('editor').classList.remove('hidden');$('adminName').textContent=`${d.admin.adminName} · ${d.admin.role}`;$('eventScope').textContent=`${SCOPE.chapterCode} / ${SCOPE.eventId}`;loadConfig(d.config);await preview()}catch(e){status($('gateStatus'),e.message,true)}};
+$('unlock').onclick=async()=>{try{status($('gateStatus'),'Checking access…');const d=await post('verifyConfigAccess');if(!d.ok)throw new Error(d.error||'Access denied');ACCESS=d.admin;CURRENT=d.config; $('gate').classList.add('hidden');$('editor').classList.remove('hidden');$('adminName').textContent=`${d.admin.adminName} · ${d.admin.role}`;$('eventScope').textContent=`${SCOPE.chapterCode} / ${SCOPE.eventId}`;loadConfig(d.config);if(PREFILL_EVENT_NAME)val('eventName',PREFILL_EVENT_NAME);await preview()}catch(e){status($('gateStatus'),e.message,true)}};
 function loadConfig(c){const ch=c.chapter||{},ev=c.event||{};val('organizationLine',ev.organizationLine||'');val('chapterTitle',ch.name||'');val('eventName',ev.name||'');val('subtitle',ev.subtitle||'');val('dateDisplay',ev.dateDisplay||'');val('timeDisplay',ev.timeDisplay||'');val('venue',ev.venue||'');val('address',ev.address||'');val('dressCodeLabel',ev.dressCodeLabel||'DRESS CODE:');val('dressCode',ev.dressCode||'');val('stubTitle',ev.stubTitle||'ADMISSION STUB');val('skylinePercent',Math.round((Number(ev.skylineScale)||1.25)*100));val('infoLabel',ev.infoLabel||'FOR MORE INFO:');val('website',ev.website||ch.website||'');val('contactLabel',ev.contactLabel||'CONTACT:');val('contactPhone',ev.contactPhone||ch.contactPhone||'');val('footerNotice',ev.footerNotice||'Ticket must be presented for admission');val('refundNotice',ev.refundNotice||'No refunds or replacements');$('logoMode').value=ev.logoMode||'CHAPTER_DEFAULT';$('backgroundMode').value=ev.backgroundMode||'CHAPTER_DEFAULT';$('logoPreview').src=ch.logoUrl||defaultLogo();$('backgroundPreview').src=ev.backgroundUrl||ch.skylineUrl||defaultBackground();$('logoHint').textContent=`Default code asset: tickets/${SCOPE.chapterCode.toLowerCase()}/logo.png`;$('backgroundHint').textContent=`Default code asset: tickets/${SCOPE.chapterCode.toLowerCase()}/skyline-bg.png`;renderTierRows(c.tiers||[])}
 function tierRow(t={}){const tr=document.createElement('tr');tr.innerHTML=`<td><input data-k="tierCode" value="${esc(t.tierCode||'')}"></td><td><input data-k="label" value="${esc(t.label||'')}"></td><td><select data-k="pricingType"><option>FIXED</option><option>DONATION</option><option>FREE</option></select></td><td><input data-k="price" type="number" min="0" step="0.01" value="${Number(t.price||0)}"></td><td><input data-k="minimumAmount" type="number" min="0" step="0.01" value="${Number(t.minimumAmount||0)}"></td><td><input data-k="suggestedAmount" type="number" min="0" step="0.01" value="${Number(t.suggestedAmount||0)}"></td><td><input data-k="amountRequired" type="checkbox" ${t.amountRequired?'checked':''} style="width:auto"></td><td><input data-k="admitCount" type="number" min="1" step="1" value="${Number(t.admitCount||1)}"></td><td><input data-k="active" type="checkbox" ${t.active===false?'':'checked'} style="width:auto"></td><td><button type="button" class="btn danger remove">Remove</button></td>`;tr.querySelector('[data-k=pricingType]').value=(t.pricingType||'FIXED').toUpperCase();tr.querySelector('.remove').onclick=()=>{tr.remove();preview()};tr.querySelectorAll('input,select').forEach(x=>x.addEventListener('input',preview));return tr}
 function renderTierRows(ts){$('tierRows').innerHTML='';(ts.length?ts:[{tierCode:'single',label:'Single',pricingType:'FIXED',price:100,admitCount:1,active:true}]).forEach(t=>$('tierRows').appendChild(tierRow(t)))}
@@ -126,6 +135,43 @@ $('backgroundMode').addEventListener('change',()=>{const m=$('backgroundMode').v
 $('saveBtn').onclick=async()=>{const b=$('saveBtn');b.disabled=true;b.textContent='Saving…';try{const tiers=collectTiers();if(!tiers.length)throw new Error('Add at least one ticket tier.');if(tiers.some(t=>!t.tierCode||!t.label))throw new Error('Every tier needs a code and title.');const event=collectEvent();const d=await post('saveTicketConfig',{event,tiers});if(!d.ok)throw new Error(d.error||'Save failed');if(event.logoMode==='CUSTOM'&&selectedLogoData){const f=$('logoFile').files[0];const u=await post('uploadEventLogo',{dataUrl:selectedLogoData,fileName:f?.name||'event-logo.png'});if(!u.ok)throw new Error(u.error||'Configuration saved, but logo upload failed');selectedLogoData=''}else if(event.logoMode==='CHAPTER_DEFAULT'){const u=await post('clearEventLogo');if(!u.ok)throw new Error(u.error||'Could not restore the default logo')}
 if(event.backgroundMode==='CUSTOM'&&selectedBackgroundData){const f=$('backgroundFile').files[0];const u=await post('uploadEventBackground',{dataUrl:selectedBackgroundData,fileName:f?.name||'event-background.png'});if(!u.ok)throw new Error(u.error||'Configuration saved, but background upload failed');selectedBackgroundData=''}else if(event.backgroundMode!=='CUSTOM'){const u=await post('clearEventBackground',{backgroundMode:event.backgroundMode});if(!u.ok)throw new Error(u.error||'Could not update background mode')}
 const refreshed=await fetch(`${ENDPOINT}?action=eventConfig&org=${encodeURIComponent(SCOPE.organizationId)}&chapter=${encodeURIComponent(SCOPE.chapterCode)}&event=${encodeURIComponent(SCOPE.eventId)}`).then(r=>r.json()).catch(()=>null);CURRENT=(refreshed&&refreshed.ok)?refreshed:(d.config||CURRENT);status($('saveStatus'),'Configuration saved. New tickets will use these branding settings.');if(CURRENT)loadConfig(CURRENT);await preview()}catch(e){status($('saveStatus'),e.message,true)}finally{b.disabled=false;b.textContent='Save Event & Ticket Design'}};
-if(STAFF_SESSION_PASSCODE){$('passcode').value=STAFF_SESSION_PASSCODE;setTimeout(()=>$('unlock').click(),0);}
+async function prepareDesignerScope(){
+  if(!STAFF_SESSION_TOKEN){location.replace('index.html?error=session');return;}
+  if(SCOPE.chapterCode&&SCOPE.eventId){setTimeout(()=>$('unlock').click(),0);return;}
+  try{
+    const r=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'designerBootstrap',sessionToken:STAFF_SESSION_TOKEN})});
+    const d=await r.json(); if(!d.ok)throw new Error(d.error||'Could not load your event scope.');
+    const chapters=d.chapters||[],events=d.events||[];
+    if(!chapters.length)throw new Error('No chapter is available in your assigned scope.');
+    $('scopeSetup').style.display='block';
+    $('scopeChapter').innerHTML=chapters.map(c=>`<option value="${esc(c.chapterCode)}">${esc(c.chapterName)}</option>`).join('');
+    if(SCOPE.chapterCode&&chapters.some(c=>c.chapterCode===SCOPE.chapterCode))$('scopeChapter').value=SCOPE.chapterCode;
+    function fillScopeEvents(){
+      const ch=$('scopeChapter').value; const list=events.filter(e=>e.chapterCode===ch);
+      let opts=list.map(e=>`<option value="${esc(e.eventId)}">${esc(e.eventName)}</option>`).join('');
+      if(d.canCreateEvent)opts='<option value="__NEW__">+ Create New Event</option>'+opts;
+      $('scopeEvent').innerHTML=opts||'<option value="">No event available</option>';
+      $('newEventNameWrap').style.display=$('scopeEvent').value==='__NEW__'?'block':'none';
+    }
+    $('scopeChapter').onchange=fillScopeEvents;$('scopeEvent').onchange=()=>{$('newEventNameWrap').style.display=$('scopeEvent').value==='__NEW__'?'block':'none'};fillScopeEvents();
+    $('scopeContinue').onclick=()=>{
+      const chapter=$('scopeChapter').value; let eventId=$('scopeEvent').value;
+      if(eventId==='__NEW__'){
+        const name=$('newEventName').value.trim(); if(!name){status($('gateStatus'),'Enter the new event name.',true);return;}
+        PREFILL_EVENT_NAME=name;
+        const slug=name.toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,36)||'EVENT';
+        const year=new Date().getFullYear(); let base=`${chapter}-${year}-${slug}`,candidate=base,n=2;
+        while(events.some(e=>e.eventId===candidate)){candidate=`${base}-${n++}`}
+        eventId=candidate;
+      }
+      if(!eventId){status($('gateStatus'),'No event is available for this scope.',true);return;}
+      SCOPE={organizationId:d.admin.organizationId||SCOPE.organizationId,chapterCode:chapter,eventId:eventId};
+      history.replaceState(null,'','designer.html?'+new URLSearchParams({org:SCOPE.organizationId,chapter:SCOPE.chapterCode,event:SCOPE.eventId}).toString());
+      $('scopeLine').textContent=`${SCOPE.organizationId} · ${SCOPE.chapterCode} · ${SCOPE.eventId}`;
+      $('scopeSetup').style.display='none'; $('unlock').click();
+    };
+  }catch(e){status($('gateStatus'),e.message,true)}
+}
+prepareDesignerScope();
 </script>
 </body></html>

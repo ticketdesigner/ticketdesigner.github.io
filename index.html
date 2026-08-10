@@ -49,7 +49,7 @@ form.addEventListener('submit',async ev=>{
     const r=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'staffLogin',adminPasscode:pass.value})});
     const d=await r.json();
     if(!d.ok) throw new Error(d.error||'Sign in failed.');
-    sessionStorage.setItem('slppStaffPasscode',pass.value);
+    sessionStorage.setItem('slppSessionToken',d.sessionToken||'');
     sessionStorage.setItem('slppStaffProfile',JSON.stringify(d));
     location.href='dashboard.html';
   }catch(e){
