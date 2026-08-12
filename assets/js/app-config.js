@@ -3,7 +3,7 @@
  */
 
 window.SLPP_APP_CONFIG = Object.freeze({
-  workflowEndpoint: 'https://script.google.com/macros/s/AKfycbyYjKF-9Ew8ZeYY00ij2eFTuptFEQvlmi6Sfpgg2RXFilmbZLoCMSuTru8vFySQFsAN4w/exec',
-  ticketConfigEndpoint: 'https://script.google.com/macros/s/AKfycbzb3JKqTAksqsNMsIPv8ewIOPjBiR8J5vZXEe7e6JqEBd6h48Iea5hKC8jlRkKDdN-Zog/exec',
+  workflowEndpoint: 'https://script.google.com/macros/s/AKfycbxTBQydnU7aAG57CZ_TrIjhurV_7SyE_6qNZJ1pZlOUoiKnwogbx6Q0tmkLXUcMq2L5LQ/exec',
+  ticketConfigEndpoint: 'https://script.google.com/macros/s/AKfycbyEzEpjZFm6fICamjbaRN6RzvCcmrcN0MwMFZG4Xa3WKgUe1q7qDaZMwm_nj0iYSKaHUA/exec',
   defaultOrganization: 'SLPPNA'
 });
