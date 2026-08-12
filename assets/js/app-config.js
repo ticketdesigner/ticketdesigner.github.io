@@ -4,6 +4,6 @@
 
 window.SLPP_APP_CONFIG = Object.freeze({
   workflowEndpoint: 'https://script.google.com/macros/s/AKfycbyYjKF-9Ew8ZeYY00ij2eFTuptFEQvlmi6Sfpgg2RXFilmbZLoCMSuTru8vFySQFsAN4w/exec',
-  ticketConfigEndpoint: 'https://script.google.com/macros/s/AKfycbxzNuRRbOEj8dUp-IT2_RCdMmVouUu30PAKuMXYSUk2xPFtK1wqpZI3mRtdlb0IWIJ2ow/exec',
+  ticketConfigEndpoint: 'https://script.google.com/macros/s/AKfycbyYjKF-9Ew8ZeYY00ij2eFTuptFEQvlmi6Sfpgg2RXFilmbZLoCMSuTru8vFySQFsAN4w/exec',
   defaultOrganization: 'SLPPNA'
 });
