@@ -49,7 +49,7 @@
   </div>
 
   <div id="editor" class="hidden">
-    <div class="topline"><div><strong id="adminName"></strong><div class="event-badge" id="eventScope"></div></div><div class="toolbar"><button id="previewBtn" class="btn secondary">Refresh Preview</button><button id="saveBtn" class="btn primary">Save Event & Ticket Design</button></div></div>
+    <div class="topline"><div><strong id="adminName"></strong><div class="event-badge" id="eventScope"></div></div><div class="toolbar"><button id="newEventBtn" class="btn secondary" type="button">+ New Event</button><button id="previewBtn" class="btn secondary">Refresh Preview</button><button id="saveBtn" class="btn primary">Save Event & Ticket Design</button></div></div>
     <div class="grid">
       <div>
         <div class="panel">
@@ -111,8 +111,9 @@
 const STAFF_SESSION_TOKEN=sessionStorage.getItem('slppSessionToken')||'';
 const DELEGATION=(()=>{try{return JSON.parse(sessionStorage.getItem('slppDelegation')||'null')}catch(_){return null}})();
 const Q=new URLSearchParams(location.search), APP=window.SLPP_APP_CONFIG||{};
-let SCOPE={organizationId:Q.get('org')||APP.defaultOrganization||'SLPPNA',chapterCode:(Q.get('chapter')||APP.defaultChapter||'').toUpperCase(),eventId:(Q.get('event')||APP.defaultEvent||'').toUpperCase()};
-let PREFILL_EVENT_NAME='';
+let CREATE_NEW_MODE=Q.get('new')==='1';
+let SCOPE={organizationId:Q.get('org')||APP.defaultOrganization||'SLPPNA',chapterCode:(Q.get('chapter')||'').toUpperCase(),eventId:CREATE_NEW_MODE?'':(Q.get('event')||'').toUpperCase()};
+let PREFILL_EVENT_NAME='', IS_CREATING_NEW_EVENT=CREATE_NEW_MODE;
 const ENDPOINT=APP.ticketConfigEndpoint; let ACCESS=null, CURRENT=null, selectedLogoData='', selectedBackgroundData='';
 const $=id=>document.getElementById(id); $('scopeLine').textContent=`${SCOPE.organizationId} · ${SCOPE.chapterCode} · ${SCOPE.eventId}`;
 function status(el,msg,error=false){el.textContent=msg;el.className='status'+(error?' error':'');el.style.display='block'}
@@ -132,12 +133,12 @@ $('logoFile').addEventListener('change',()=>{const f=$('logoFile').files[0];if(!
 $('backgroundFile').addEventListener('change',()=>{const f=$('backgroundFile').files[0];if(!f)return;if(f.size>2*1024*1024){status($('saveStatus'),'Background must be smaller than 2 MB.',true);$('backgroundFile').value='';return}const r=new FileReader();r.onload=()=>{selectedBackgroundData=r.result;$('backgroundMode').value='CUSTOM';$('backgroundPreview').src=r.result;preview()};r.readAsDataURL(f)});
 $('logoMode').addEventListener('change',()=>{if($('logoMode').value==='CHAPTER_DEFAULT'){$('logoPreview').src=defaultLogo()}preview()});
 $('backgroundMode').addEventListener('change',()=>{const m=$('backgroundMode').value;$('backgroundPreview').style.visibility=m==='NONE'?'hidden':'visible';if(m==='CHAPTER_DEFAULT')$('backgroundPreview').src=defaultBackground();preview()});
-$('saveBtn').onclick=async()=>{const b=$('saveBtn');b.disabled=true;b.textContent='Saving…';try{const tiers=collectTiers();if(!tiers.length)throw new Error('Add at least one ticket tier.');if(tiers.some(t=>!t.tierCode||!t.label))throw new Error('Every tier needs a code and title.');const event=collectEvent();const d=await post('saveTicketConfig',{event,tiers});if(!d.ok)throw new Error(d.error||'Save failed');if(event.logoMode==='CUSTOM'&&selectedLogoData){const f=$('logoFile').files[0];const u=await post('uploadEventLogo',{dataUrl:selectedLogoData,fileName:f?.name||'event-logo.png'});if(!u.ok)throw new Error(u.error||'Configuration saved, but logo upload failed');selectedLogoData=''}else if(event.logoMode==='CHAPTER_DEFAULT'){const u=await post('clearEventLogo');if(!u.ok)throw new Error(u.error||'Could not restore the default logo')}
+$('saveBtn').onclick=async()=>{const b=$('saveBtn');b.disabled=true;b.textContent='Saving…';try{const tiers=collectTiers();if(!tiers.length)throw new Error('Add at least one ticket tier.');if(tiers.some(t=>!t.tierCode||!t.label))throw new Error('Every tier needs a code and title.');const event=collectEvent();const d=await post('saveTicketConfig',{event,tiers,createNewEvent:IS_CREATING_NEW_EVENT});if(!d.ok)throw new Error(d.error||'Save failed');if(d.eventId){SCOPE.eventId=String(d.eventId).toUpperCase();IS_CREATING_NEW_EVENT=false;CREATE_NEW_MODE=false;history.replaceState(null,'','designer.html?'+new URLSearchParams({org:SCOPE.organizationId,chapter:SCOPE.chapterCode,event:SCOPE.eventId}).toString());$('scopeLine').textContent=`${SCOPE.organizationId} · ${SCOPE.chapterCode} · ${SCOPE.eventId}`;$('eventScope').textContent=`${SCOPE.chapterCode} / ${SCOPE.eventId}`;}if(event.logoMode==='CUSTOM'&&selectedLogoData){const f=$('logoFile').files[0];const u=await post('uploadEventLogo',{dataUrl:selectedLogoData,fileName:f?.name||'event-logo.png'});if(!u.ok)throw new Error(u.error||'Configuration saved, but logo upload failed');selectedLogoData=''}else if(event.logoMode==='CHAPTER_DEFAULT'){const u=await post('clearEventLogo');if(!u.ok)throw new Error(u.error||'Could not restore the default logo')}
 if(event.backgroundMode==='CUSTOM'&&selectedBackgroundData){const f=$('backgroundFile').files[0];const u=await post('uploadEventBackground',{dataUrl:selectedBackgroundData,fileName:f?.name||'event-background.png'});if(!u.ok)throw new Error(u.error||'Configuration saved, but background upload failed');selectedBackgroundData=''}else if(event.backgroundMode!=='CUSTOM'){const u=await post('clearEventBackground',{backgroundMode:event.backgroundMode});if(!u.ok)throw new Error(u.error||'Could not update background mode')}
 const refreshed=await fetch(`${ENDPOINT}?action=eventConfig&org=${encodeURIComponent(SCOPE.organizationId)}&chapter=${encodeURIComponent(SCOPE.chapterCode)}&event=${encodeURIComponent(SCOPE.eventId)}`).then(r=>r.json()).catch(()=>null);CURRENT=(refreshed&&refreshed.ok)?refreshed:(d.config||CURRENT);status($('saveStatus'),'Configuration saved. New tickets will use these branding settings.');if(CURRENT)loadConfig(CURRENT);await preview()}catch(e){status($('saveStatus'),e.message,true)}finally{b.disabled=false;b.textContent='Save Event & Ticket Design'}};
 async function prepareDesignerScope(){
   if(!STAFF_SESSION_TOKEN){location.replace('index.html?error=session');return;}
-  if(SCOPE.chapterCode&&SCOPE.eventId){setTimeout(()=>$('unlock').click(),0);return;}
+  if(!CREATE_NEW_MODE&&SCOPE.chapterCode&&SCOPE.eventId){setTimeout(()=>$('unlock').click(),0);return;}
   try{
     const r=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'designerBootstrap',sessionToken:STAFF_SESSION_TOKEN})});
     const d=await r.json(); if(!d.ok)throw new Error(d.error||'Could not load your event scope.');
@@ -151,12 +152,14 @@ async function prepareDesignerScope(){
       let opts=list.map(e=>`<option value="${esc(e.eventId)}">${esc(e.eventName)}</option>`).join('');
       if(d.canCreateEvent)opts='<option value="__NEW__">+ Create New Event</option>'+opts;
       $('scopeEvent').innerHTML=opts||'<option value="">No event available</option>';
+      if(CREATE_NEW_MODE&&d.canCreateEvent&&[...$('scopeEvent').options].some(o=>o.value==='__NEW__'))$('scopeEvent').value='__NEW__';
       $('newEventNameWrap').style.display=$('scopeEvent').value==='__NEW__'?'block':'none';
     }
     $('scopeChapter').onchange=fillScopeEvents;$('scopeEvent').onchange=()=>{$('newEventNameWrap').style.display=$('scopeEvent').value==='__NEW__'?'block':'none'};fillScopeEvents();
     $('scopeContinue').onclick=()=>{
       const chapter=$('scopeChapter').value; let eventId=$('scopeEvent').value;
       if(eventId==='__NEW__'){
+        IS_CREATING_NEW_EVENT=true;
         const name=$('newEventName').value.trim(); if(!name){status($('gateStatus'),'Enter the new event name.',true);return;}
         PREFILL_EVENT_NAME=name;
         const slug=name.toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,36)||'EVENT';
@@ -165,6 +168,7 @@ async function prepareDesignerScope(){
         eventId=candidate;
       }
       if(!eventId){status($('gateStatus'),'No event is available for this scope.',true);return;}
+      if(eventId!=='__NEW__'&&!IS_CREATING_NEW_EVENT)IS_CREATING_NEW_EVENT=false;
       SCOPE={organizationId:d.admin.organizationId||SCOPE.organizationId,chapterCode:chapter,eventId:eventId};
       history.replaceState(null,'','designer.html?'+new URLSearchParams({org:SCOPE.organizationId,chapter:SCOPE.chapterCode,event:SCOPE.eventId}).toString());
       $('scopeLine').textContent=`${SCOPE.organizationId} · ${SCOPE.chapterCode} · ${SCOPE.eventId}`;
@@ -172,6 +176,7 @@ async function prepareDesignerScope(){
     };
   }catch(e){status($('gateStatus'),e.message,true)}
 }
+$('newEventBtn').onclick=()=>{location.href='designer.html?'+new URLSearchParams({org:SCOPE.organizationId||'SLPPNA',new:'1'}).toString()};
 prepareDesignerScope();
 </script>
 </body></html>
